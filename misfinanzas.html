@@ -997,7 +997,7 @@ function renderView(){
 }
 
 function renderGastos(el){
-  const gm=gastosDelMes(mesActual).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const gm=gastosDelMes(mesActual).sort((a,b)=>{ const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd; const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx; const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx; return tb-ta; });
   if(!gm.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sin gastos este mes</div></div>`;return;}
   el.innerHTML=`<div class="section-label">Gastos del mes</div>`+gm.map(g=>{
     const emojiMatch=g.rubro.match(/^\p{Emoji}/u);
@@ -1257,7 +1257,7 @@ function cambiarMesComparar(n,v){
 
 function buscarGastos(){
   const q=document.getElementById('inputBuscar').value.toLowerCase();
-  const res=gastos.filter(g=>g.detalle.toLowerCase().includes(q)||g.rubro.toLowerCase().includes(q)||g.subrubro.toLowerCase().includes(q)).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,20);
+  const res=gastos.filter(g=>g.detalle.toLowerCase().includes(q)||g.rubro.toLowerCase().includes(q)||g.subrubro.toLowerCase().includes(q)).sort((a,b)=>{ const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd; const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx; const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx; return tb-ta; }).slice(0,20);
   const el=document.getElementById('buscarResultados');
   if(!q){el.innerHTML='';return;}
   if(!res.length){el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text">Sin resultados</div></div>';return;}
