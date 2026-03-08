@@ -1127,32 +1127,46 @@ async function guardarGasto(){
   if(!rubroSeleccionado) return showToast('⚠️ Seleccioná un rubro');
   const detalle=document.getElementById('inputDetalle').value.trim();
   const fecha=document.getElementById('inputFecha').value;
-  try{
-    if(tipoGasto==='cuota'){
-      const cant=parseInt(document.getElementById('inputCuotas').value);
-      if(!cant||cant<2) return showToast('⚠️ Mínimo 2 cuotas');
-      const montoCuota=Math.round(monto/cant);
-      const filas=[];
-      for(let i=0;i<cant;i++){
-        const d=new Date(fecha+'T12:00:00');
-        d.setMonth(d.getMonth()+i);
-        const f=d.toISOString().slice(0,10);
-        const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-        filas.push([f,mk,rubroSeleccionado,subRubroSeleccionado||'',detalle,montoCuota,'Cuota '+(i+1)+'/'+cant]);
-      }
-      await scriptPost({accion:'guardar',hoja:'Gastos',filas});
-      await scriptPost({accion:'guardar',hoja:'Cuotas Activas',filas:[[fecha,rubroSeleccionado,detalle,montoCuota,cant,1,monto,'']]});
-      showToast('✅ '+cant+' cuotas de $'+fmt(montoCuota));
-    } else {
-      const mk=fecha.slice(0,7);
-      const tipo=tipoGasto==='fijo'?'Fijo':'Contado';
-      await scriptPost({accion:'guardar',hoja:'Gastos',filas:[[fecha,mk,rubroSeleccionado,subRubroSeleccionado||'',detalle,monto,tipo]]});
-      if(tipoGasto==='fijo') await scriptPost({accion:'guardar',hoja:'Gastos Fijos',filas:[[detalle||rubroSeleccionado,rubroSeleccionado,monto,'true']]});
-      showToast('✅ Gasto registrado');
+  const mk=fecha.slice(0,7);
+
+  if(tipoGasto==='cuota'){
+    const cant=parseInt(document.getElementById('inputCuotas').value);
+    if(!cant||cant<2) return showToast('⚠️ Mínimo 2 cuotas');
+    const montoCuota=Math.round(monto/cant);
+    const filas=[];
+    for(let i=0;i<cant;i++){
+      const d=new Date(fecha+'T12:00:00');
+      d.setMonth(d.getMonth()+i);
+      const f=d.toISOString().slice(0,10);
+      const mk2=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      filas.push([f,mk2,rubroSeleccionado,subRubroSeleccionado||'',detalle,montoCuota,'Cuota '+(i+1)+'/'+cant]);
     }
+    // Optimistic: agregar solo la cuota del mes actual a la vista
+    const cuotaLocal={fecha,mes:mk,rubro:rubroSeleccionado,subrubro:subRubroSeleccionado||'',detalle,monto:montoCuota,tipo:'Cuota 1/'+cant};
+    gastos.push(cuotaLocal);
+    const nuevaCuota={fecha,rubro:rubroSeleccionado,detalle,montoCuota,totalCuotas:cant,cuotaActual:1,totalGasto:monto};
+    cuotasActivas.push(nuevaCuota);
+    updateHeader(); renderView();
     closeModal('modalNuevo');
-    await loadData();
-  }catch(e){showToast('❌ Error: '+e.message);}
+    showToast('✅ '+cant+' cuotas de $'+fmt(montoCuota));
+    // Guardar en background
+    scriptPost({accion:'guardar',hoja:'Gastos',filas}).catch(()=>showToast('⚠️ Error al sincronizar'));
+    scriptPost({accion:'guardar',hoja:'Cuotas Activas',filas:[[fecha,rubroSeleccionado,detalle,montoCuota,cant,1,monto,'']]});
+  } else {
+    const tipo=tipoGasto==='fijo'?'Fijo':'Contado';
+    // Optimistic: agregar gasto a la lista local al instante
+    const gastoLocal={fecha,mes:mk,rubro:rubroSeleccionado,subrubro:subRubroSeleccionado||'',detalle,monto,tipo};
+    gastos.push(gastoLocal);
+    if(tipoGasto==='fijo') gastosFijos.push({nombre:detalle||rubroSeleccionado,rubro:rubroSeleccionado,monto,activo:true});
+    updateHeader(); renderView();
+    closeModal('modalNuevo');
+    showToast('✅ Gasto registrado');
+    // Guardar en background
+    scriptPost({accion:'guardar',hoja:'Gastos',filas:[[fecha,mk,rubroSeleccionado,subRubroSeleccionado||'',detalle,monto,tipo]]})
+      .catch(()=>showToast('⚠️ Error al sincronizar'));
+    if(tipoGasto==='fijo')
+      scriptPost({accion:'guardar',hoja:'Gastos Fijos',filas:[[detalle||rubroSeleccionado,rubroSeleccionado,monto,'true']]});
+  }
 }
 
 function openConfig(){renderConfig();openModal('modalConfig');}
@@ -1212,7 +1226,7 @@ function buscarGastos(){
   const el=document.getElementById('buscarResultados');
   if(!q){el.innerHTML='';return;}
   if(!res.length){el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text">Sin resultados</div></div>';return;}
-  el.innerHTML=res.map(g=>{const em=g.rubro.match(/^\p{Emoji}/u);const icon=em?em[0]:'💸';const rn=g.rubro.replace(/^\p{Emoji}\s*/u,'');return`<div class="gasto-card"><div class="gasto-icon">${icon}</div><div class="gasto-info"><div class="gasto-rubro">${rn}${g.subrubro?' · '+g.subrubro:''}</div><div class="gasto-detalle">${g.detalle||'—'}</div></div><div class="gasto-right"><div class="gasto-monto">$${fmt(g.monto)}</div><div class="gasto-fecha">${g.fecha}</div></div></div>`).join('');
+  el.innerHTML=res.map(g=>{const em=g.rubro.match(/^\p{Emoji}/u);const icon=em?em[0]:'💸';const rn=g.rubro.replace(/^\p{Emoji}\s*/u,'');return`<div class="gasto-card"><div class="gasto-icon">${icon}</div><div class="gasto-info"><div class="gasto-rubro">${rn}${g.subrubro?' · '+g.subrubro:''}</div><div class="gasto-detalle">${g.detalle||'—'}</div></div><div class="gasto-right"><div class="gasto-monto">$${fmt(g.monto)}</div><div class="gasto-fecha">${g.fecha}</div></div></div>`;}).join('');
 }
 
 function showToast(msg){
