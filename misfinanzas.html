@@ -367,7 +367,8 @@ async function scriptPost(data) {
 // CARGAR DATOS
 async function loadData() {
   try {
-    const data = await scriptPost({ accion: 'leer' });
+    const r = await fetch(APPS_SCRIPT_URL + '?accion=leer');
+    const data = await r.json();
 
     gastos = (data['Gastos'] || []).map(r => ({
       fecha: r[0] || '',
