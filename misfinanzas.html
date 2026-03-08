@@ -971,7 +971,7 @@ function renderGastos(el){
       <div class="gasto-icon">${emoji}</div>
       <div class="gasto-info">
         <div class="gasto-rubro">${rubroNombre}${g.subrubro?' · '+g.subrubro:''}</div>
-        <div class="gasto-detalle">${g.detalle||'—'}</div>
+        ${g.detalle?`<div class="gasto-detalle">${g.detalle}</div>`:''}
       </div>
       <div class="gasto-right">
         <div class="gasto-monto">$${fmt(g.monto)}</div>
@@ -1226,7 +1226,7 @@ function buscarGastos(){
   const el=document.getElementById('buscarResultados');
   if(!q){el.innerHTML='';return;}
   if(!res.length){el.innerHTML='<div class="empty" style="padding:20px"><div class="empty-text">Sin resultados</div></div>';return;}
-  el.innerHTML=res.map(g=>{const em=g.rubro.match(/^\p{Emoji}/u);const icon=em?em[0]:'💸';const rn=g.rubro.replace(/^\p{Emoji}\s*/u,'');return`<div class="gasto-card"><div class="gasto-icon">${icon}</div><div class="gasto-info"><div class="gasto-rubro">${rn}${g.subrubro?' · '+g.subrubro:''}</div><div class="gasto-detalle">${g.detalle||'—'}</div></div><div class="gasto-right"><div class="gasto-monto">$${fmt(g.monto)}</div><div class="gasto-fecha">${g.fecha}</div></div></div>`;}).join('');
+  el.innerHTML=res.map(g=>{const em=g.rubro.match(/^\p{Emoji}/u);const icon=em?em[0]:'💸';const rn=g.rubro.replace(/^\p{Emoji}\s*/u,'');return`<div class="gasto-card"><div class="gasto-icon">${icon}</div><div class="gasto-info"><div class="gasto-rubro">${rn}${g.subrubro?' · '+g.subrubro:''}</div>${g.detalle?'<div class="gasto-detalle">'+g.detalle+'</div>':''}</div><div class="gasto-right"><div class="gasto-monto">$${fmt(g.monto)}</div><div class="gasto-fecha">${g.fecha}</div></div></div>`;}).join('');
 }
 
 function showToast(msg){
