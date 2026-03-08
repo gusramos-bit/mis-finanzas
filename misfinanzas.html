@@ -899,8 +899,14 @@ async function scriptPost(data){
 
 async function loadData(){
   try{
-    const r=await fetch(APPS_SCRIPT_URL+'?accion=leer');
-    const data=await r.json();
+    const r=await fetch(APPS_SCRIPT_URL+'?accion=leer',{redirect:'follow'});
+    const text=await r.text();
+    let data;
+    try{data=JSON.parse(text);}catch(pe){
+      console.error('Respuesta no-JSON:',text.slice(0,300));
+      throw new Error('Apps Script no devolvió JSON. Verificá que esté publicado como "Cualquiera (sin iniciar sesión)".');
+    }
+    if(data.error) throw new Error(data.error);
     gastos=(data['Gastos']||[]).map(r=>({fecha:r[0]||'',mes:r[1]||'',rubro:r[2]||'',subrubro:r[3]||'',detalle:r[4]||'',monto:parseFloat(r[5])||0,tipo:r[6]||'Contado'}));
     cuotasActivas=(data['Cuotas Activas']||[]).map(r=>({fecha:r[0]||'',rubro:r[1]||'',detalle:r[2]||'',montoCuota:parseFloat(r[3])||0,totalCuotas:parseInt(r[4])||0,cuotaActual:parseInt(r[5])||1,totalGasto:parseFloat(r[6])||0}));
     gastosFijos=(data['Gastos Fijos']||[]).map(r=>({nombre:r[0]||'',rubro:r[1]||'',monto:parseFloat(r[2])||0,activo:r[3]!=='false'}));
@@ -908,8 +914,8 @@ async function loadData(){
     updateHeader();
     renderView();
   }catch(e){
-    document.getElementById('mainContent').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Error al cargar datos.<br>Verificá tu conexión.</div></div>`;
-    console.error(e);
+    document.getElementById('mainContent').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">${e.message||'Error al cargar datos.'}<br><br><small style="color:var(--muted);font-size:11px">Revisá la consola (F12) para más detalles</small></div></div>`;
+    console.error('loadData error:',e);
   }
 }
 
