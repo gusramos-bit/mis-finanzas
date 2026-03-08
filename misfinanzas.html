@@ -935,18 +935,17 @@ async function loadData(){
       throw new Error('Apps Script no devolvió JSON. Verificá que esté publicado como "Cualquiera (sin iniciar sesión)".');
     }
     if(data.error) throw new Error(data.error);
-    gastos=(data['Gastos']||[]).map((r,i)=>{
-      // Detectar si primera columna es ID (empieza con 'GAS-') o Fecha
-      const hasId = String(r[0]).startsWith('GAS-');
-      const o = hasId ? 1 : 0;
-      return {
-        id: hasId ? r[0] : null,
-        idx: i,
-        fecha: r[o]||'', mes: r[o+1]||'', rubro: r[o+2]||'',
-        subrubro: r[o+3]||'', detalle: r[o+4]||'',
-        monto: parseFloat(r[o+5])||0, tipo: r[o+6]||'Contado'
-      };
-    });
+    // Detectar si la hoja tiene columna ID mirando el encabezado
+    const header=(data['GastosHeader']||[]);
+    const hasId = header.length>0 && String(header[0]).toUpperCase()==='ID';
+    const o = hasId ? 1 : 0;
+    gastos=(data['Gastos']||[]).map((r,i)=>({
+      id: hasId ? (r[0]||null) : null,
+      idx: i,
+      fecha: r[o]||'', mes: r[o+1]||'', rubro: r[o+2]||'',
+      subrubro: r[o+3]||'', detalle: r[o+4]||'',
+      monto: parseFloat(r[o+5])||0, tipo: r[o+6]||'Contado'
+    }));
     cuotasActivas=(data['Cuotas Activas']||[]).map(r=>({fecha:r[0]||'',rubro:r[1]||'',detalle:r[2]||'',montoCuota:parseFloat(r[3])||0,totalCuotas:parseInt(r[4])||0,cuotaActual:parseInt(r[5])||1,totalGasto:parseFloat(r[6])||0}));
     gastosFijos=(data['Gastos Fijos']||[]).map(r=>({nombre:r[0]||'',rubro:r[1]||'',monto:parseFloat(r[2])||0,activo:r[3]!=='false'}));
     loadRubros(data);
