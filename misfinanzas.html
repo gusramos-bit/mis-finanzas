@@ -299,7 +299,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzx4TmOeQp19qKDg3q24SnIxRnvBhcNRoXXQAOrJwNBJ0Hj3MMSi1kis4r5gfOrpvya/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaBMeT6nULilPnIl0aaHykvx_pkcDnN6iyrPY6qQkRpxTmjcJ6jaSddtUqQ3YWRzvO/exec';
 
 // Estado global
 let gastos = [];
@@ -325,9 +325,19 @@ const RUBROS_DEFAULT = [
   { nombre: '📦 Otros', color: '#a0a0c0', subs: [] },
 ];
 
-function loadRubros() {
-  const saved = localStorage.getItem('rubros_finanzas');
-  rubros = saved ? JSON.parse(saved) : RUBROS_DEFAULT;
+function loadRubros(data) {
+  // Si hay rubros en el Sheets, usarlos
+  if (data && data['Rubros'] && data['Rubros'].length > 0) {
+    rubros = data['Rubros'].map(r => ({
+      nombre: String(r[0] || '').trim(),
+      color: '#7c6af7',
+      subs: r[1] ? String(r[1]).split(',').map(s => s.trim()).filter(s => s) : []
+    })).filter(r => r.nombre);
+  } else {
+    // Fallback a los defaults
+    const saved = localStorage.getItem('rubros_finanzas');
+    rubros = saved ? JSON.parse(saved) : RUBROS_DEFAULT;
+  }
 }
 
 function saveRubros() {
@@ -397,6 +407,7 @@ async function loadData() {
       activo: r[3] !== 'false'
     }));
 
+    loadRubros(data);
     updateHeader();
     renderView();
   } catch(e) {
@@ -809,7 +820,6 @@ function showToast(msg) {
 }
 
 // INIT
-loadRubros();
 document.getElementById('monthBadge').textContent = fmtMes(mesActual);
 loadData();
 
