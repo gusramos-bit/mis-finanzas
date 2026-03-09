@@ -1241,11 +1241,20 @@ function agregarRubro(){
   const emoji=document.getElementById('nuevoRubroEmoji').value.trim()||'📌';
   const nombre=document.getElementById('nuevoRubroNombre').value.trim();
   if(!nombre) return showToast('⚠️ Ingresá un nombre');
-  rubros.push({nombre:`${emoji} ${nombre}`,color:'#e8ff47',subs:[]});
-  saveRubros();renderConfig();showToast('✅ Rubro agregado');
+  const nuevoRubro={nombre:`${emoji} ${nombre}`,color:'#e8ff47',subs:[]};
+  rubros.push(nuevoRubro);
+  saveRubros(); renderConfig(); showToast('✅ Rubro agregado');
+  // Guardar en Sheets
+  scriptPost({accion:'guardarRubros',rubros:rubros.map(r=>([r.nombre,(r.subs||[]).join(',')]))})
+    .catch(()=>showToast('⚠️ Error al sincronizar rubro'));
 }
 
-function eliminarRubro(i){rubros.splice(i,1);saveRubros();renderConfig();showToast('🗑 Eliminado');}
+function eliminarRubro(i){
+  rubros.splice(i,1);
+  saveRubros(); renderConfig(); showToast('🗑 Eliminado');
+  scriptPost({accion:'guardarRubros',rubros:rubros.map(r=>([r.nombre,(r.subs||[]).join(',')]))})
+    .catch(()=>showToast('⚠️ Error al sincronizar'));
+}
 
 function cambiarMes(v){mesActual=new Date(v+'-15');updateHeader();renderView();}
 
