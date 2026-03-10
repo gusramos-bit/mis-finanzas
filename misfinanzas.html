@@ -742,7 +742,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <div class="header">
   <div class="header-row">
     <div class="logo">mis<span>finanzas</span></div>
-    <div class="month-btn" onclick="openConfig()">
+    <div class="month-btn" onclick="document.getElementById('mesSelectorQuick').value=mesKey(mesActual);openModal('modalMes')">
       <span class="month-btn-text" id="monthBadge">cargando...</span>
       <span class="month-btn-arrow">▾</span>
     </div>
@@ -752,6 +752,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <div class="hero">
   <div class="hero-eyebrow">Total del mes</div>
   <div class="hero-amount"><span class="hero-amount-sign">$</span><span id="totalMes">0</span></div>
+  <div id="heroUsd" style="display:none;font-size:13px;color:var(--muted2);margin-bottom:14px;font-weight:500;letter-spacing:0.2px"></div>
   <div class="hero-divider"></div>
   <div class="hero-stats">
     <div class="hero-stat">
@@ -775,6 +776,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
   <button class="nav-pill" onclick="switchView('cuotas',this)">💳 Cuotas</button>
   <button class="nav-pill" onclick="switchView('comparar',this)">📈 Comparar</button>
   <button class="nav-pill" onclick="switchView('fijos',this)">🔁 Fijos</button>
+  <button class="nav-pill" onclick="switchView('usd',this)">💵 USD</button>
 </div>
 
 <div class="content" id="mainContent">
@@ -797,6 +799,16 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
     <div class="nav-item-label">Config</div>
   </div>
 </nav>
+
+<!-- MODAL MES -->
+<div class="modal-overlay" id="modalMes">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Mes actual</div>
+    <input class="form-input" type="month" id="mesSelectorQuick" onchange="cambiarMesQuick(this.value)">
+    <button class="btn-secondary" onclick="closeModal('modalMes')">Cerrar</button>
+  </div>
+</div>
 
 <!-- MODAL NUEVO GASTO -->
 <div class="modal-overlay" id="modalNuevo">
@@ -888,6 +900,7 @@ let rubroSeleccionado=null, subRubroSeleccionado=null;
 let mesActual=new Date();
 let mesComparar1=new Date();
 let mesComparar2=new Date(new Date().setMonth(new Date().getMonth()-1));
+let tipoCambio={}; // {  '2026-03': 1300, '2026-02': 1200, ... }
 
 const RUBROS_DEFAULT=[
   {nombre:'🏠 Hogar',color:'#e8ff47',subs:['Alquiler','Expensas','Luz','Gas','Agua','Internet','Supermercado']},
@@ -949,6 +962,9 @@ async function loadData(){
     cuotasActivas=(data['Cuotas Activas']||[]).map(r=>({fecha:r[0]||'',rubro:r[1]||'',detalle:r[2]||'',montoCuota:parseFloat(r[3])||0,totalCuotas:parseInt(r[4])||0,cuotaActual:parseInt(r[5])||1,totalGasto:parseFloat(r[6])||0}));
     gastosFijos=(data['Gastos Fijos']||[]).map(r=>({nombre:r[0]||'',rubro:r[1]||'',monto:parseFloat(r[2])||0,activo:r[3]!=='false'}));
     loadRubros(data);
+    // Cargar tipo de cambio
+    tipoCambio={};
+    (data['TipoCambio']||[]).forEach(r=>{ if(r[0]&&r[1]) tipoCambio[String(r[0]).trim()]=parseFloat(r[1])||0; });
     updateHeader();
     renderView();
   }catch(e){
@@ -970,6 +986,17 @@ function updateHeader(){
   document.getElementById('totalHoy').textContent='$'+fmt(totalH);
   document.getElementById('totalCuotas').textContent='$'+fmt(totalC);
   document.getElementById('cantGastos').textContent=gm.length;
+  // USD en hero
+  const mk=mesKey(mesActual);
+  const tc=tipoCambio[mk];
+  const heroUsd=document.getElementById('heroUsd');
+  if(tc&&tc>0){
+    const usd=(total/tc).toFixed(0);
+    heroUsd.textContent='≈ USD '+Number(usd).toLocaleString('es-AR')+' (TC $'+fmt(tc)+')';
+    heroUsd.style.display='block';
+  } else {
+    heroUsd.style.display='none';
+  }
 }
 
 function switchView(v,btn){
@@ -994,9 +1021,12 @@ function renderView(){
   else if(currentView==='cuotas') renderCuotas(el);
   else if(currentView==='comparar') renderComparar(el);
   else if(currentView==='fijos') renderFijos(el);
+  else if(currentView==='usd') renderUSD(el);
 }
 
 function renderGastos(el){
+  const mk=mesKey(mesActual);
+  const tc=tipoCambio[mk]||0;
   const gm=gastosDelMes(mesActual).sort((a,b)=>{ const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd; const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx; const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx; return tb-ta; });
   if(!gm.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sin gastos este mes</div></div>`;return;}
   el.innerHTML=`<div class="section-label">Gastos del mes</div>`+gm.map(g=>{
@@ -1005,6 +1035,7 @@ function renderGastos(el){
     const rubroNombre=g.rubro.replace(/^\p{Emoji}\s*/u,'');
     const tipoClass=g.tipo&&g.tipo.startsWith('Cuota')?'tipo-cuota':g.tipo==='Fijo'?'tipo-fijo':'tipo-contado';
     const tipoLabel=g.tipo&&g.tipo.startsWith('Cuota')?g.tipo:g.tipo||'Contado';
+    const usdStr=tc>0?`<div style="font-size:10px;color:var(--muted);font-weight:500;margin-top:2px">USD ${(g.monto/tc).toFixed(0)}</div>`:'';
     return `<div class="gasto-card" onclick="editarGasto(${gastos.indexOf(g)})" style="cursor:pointer">
       <div class="gasto-icon">${emoji}</div>
       <div class="gasto-info">
@@ -1013,6 +1044,7 @@ function renderGastos(el){
       </div>
       <div class="gasto-right">
         <div class="gasto-monto">$${fmt(g.monto)}</div>
+        ${usdStr}
         <div class="gasto-fecha">${g.fecha}</div>
         <div class="gasto-tipo ${tipoClass}">${tipoLabel}</div>
       </div>
@@ -1234,6 +1266,22 @@ function renderConfig(){
         <input class="form-input" type="month" id="mes1Selector" value="${mesKey(mesComparar1)}" onchange="cambiarMesComparar(1,this.value)">
         <input class="form-input" type="month" id="mes2Selector" value="${mesKey(mesComparar2)}" onchange="cambiarMesComparar(2,this.value)">
       </div>
+    </div>
+    <div class="config-section">
+      <div class="section-label">Tipo de cambio por mes</div>
+      ${(()=>{
+        const meses=[];
+        for(let i=0;i<6;i++){const d=new Date(mesActual);d.setMonth(d.getMonth()-i);meses.push(mesKey(d));}
+        return meses.map(mk=>{
+          const tc=tipoCambio[mk]||'';
+          const label=new Date(mk+'-15').toLocaleDateString('es-AR',{month:'short',year:'numeric'});
+          return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span style="font-size:13px;color:var(--muted2);font-weight:500;width:80px;text-transform:capitalize">${label}</span>
+            <input class="form-input" type="number" placeholder="TC" value="${tc}" id="tc-${mk}" style="margin-bottom:0;flex:1" inputmode="decimal">
+            <button onclick="guardarTipoCambio('${mk}',parseFloat(document.getElementById('tc-${mk}').value))" style="background:var(--accent);border:none;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;color:#0d0d0d;cursor:pointer">OK</button>
+          </div>`;
+        }).join('');
+      })()}
     </div>`;
 }
 
@@ -1257,6 +1305,49 @@ function eliminarRubro(i){
 }
 
 function cambiarMes(v){mesActual=new Date(v+'-15');updateHeader();renderView();}
+function cambiarMesQuick(v){mesActual=new Date(v+'-15');updateHeader();renderView();closeModal('modalMes');}
+
+function renderUSD(el){
+  const mk=mesKey(mesActual);
+  const tc=tipoCambio[mk]||0;
+  if(!tc){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">💵</div><div class="empty-text">No hay tipo de cambio cargado para este mes.<br><br>Cargalo en Configuración.</div></div>`;
+    return;
+  }
+  const gm=gastosDelMes(mesActual).sort((a,b)=>{ const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd; const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx; const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx; return tb-ta; });
+  const totalUSD=(gm.reduce((s,g)=>s+g.monto,0)/tc).toFixed(0);
+  el.innerHTML=`
+    <div class="section-label">Gastos en USD · TC $${fmt(tc)}</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px">Total del mes</span>
+      <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:26px;color:var(--accent);letter-spacing:-1px">USD ${Number(totalUSD).toLocaleString('es-AR')}</span>
+    </div>
+    `+gm.map(g=>{
+      const emojiMatch=g.rubro.match(/^\p{Emoji}/u);
+      const emoji=emojiMatch?emojiMatch[0]:'💸';
+      const rubroNombre=g.rubro.replace(/^\p{Emoji}\s*/u,'');
+      const usd=(g.monto/tc).toFixed(0);
+      return `<div class="gasto-card">
+        <div class="gasto-icon">${emoji}</div>
+        <div class="gasto-info">
+          <div class="gasto-rubro">${rubroNombre}${g.subrubro?' · '+g.subrubro:''}</div>
+          ${g.detalle?`<div class="gasto-detalle">${g.detalle}</div>`:''}
+        </div>
+        <div class="gasto-right">
+          <div class="gasto-monto" style="color:var(--accent)">USD ${Number(usd).toLocaleString('es-AR')}</div>
+          <div class="gasto-fecha">$${fmt(g.monto)}</div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+async function guardarTipoCambio(mes, tc){
+  if(!tc||tc<=0) return showToast('⚠️ Ingresá un TC válido');
+  tipoCambio[mes]=tc;
+  updateHeader(); renderView();
+  showToast('✅ TC guardado');
+  scriptPost({accion:'guardarTC',mes,tc}).catch(()=>showToast('⚠️ Error al sincronizar TC'));
+}
 
 function cambiarMesComparar(n,v){
   if(n===1) mesComparar1=new Date(v+'-15');
