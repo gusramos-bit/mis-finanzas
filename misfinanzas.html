@@ -267,7 +267,7 @@ body {
 .gasto-monto {
   font-family: 'Syne', sans-serif;
   font-weight: 700;
-  font-size: 17px;
+  font-size: 18px;
   color: var(--text);
   letter-spacing: -0.5px;
   margin-bottom: 3px;
@@ -939,16 +939,37 @@ async function scriptPost(data){
 }
 
 async function loadData(){
+  // Mostrar datos cacheados al instante mientras refresca
+  const cached = localStorage.getItem('finanzas_cache');
+  if(cached){
+    try{
+      const d=JSON.parse(cached);
+      procesarData(d);
+      updateHeader(); renderView();
+    }catch(e){}
+  }
   try{
     const r=await fetch(APPS_SCRIPT_URL+'?accion=leer',{redirect:'follow'});
     const text=await r.text();
     let data;
     try{data=JSON.parse(text);}catch(pe){
       console.error('Respuesta no-JSON:',text.slice(0,300));
-      throw new Error('Apps Script no devolvió JSON. Verificá que esté publicado como "Cualquiera (sin iniciar sesión)".');
+      if(!cached) throw new Error('Apps Script no devolvió JSON. Verificá que esté publicado como "Cualquiera (sin iniciar sesión)".');
+      return; // Si hay cache, no mostrar error
     }
     if(data.error) throw new Error(data.error);
+    localStorage.setItem('finanzas_cache', JSON.stringify(data));
+    procesarData(data);
     // Detectar si la hoja tiene columna ID mirando el encabezado
+  }catch(e){
+    if(!localStorage.getItem('finanzas_cache')){
+      document.getElementById('mainContent').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">${e.message||'Error al cargar datos.'}<br><br><small style="color:var(--muted);font-size:11px">Revisá la consola (F12) para más detalles</small></div></div>`;
+    }
+    console.error('loadData error:',e);
+  }
+}
+
+function procesarData(data){
     const header=(data['GastosHeader']||[]);
     const hasId = header.length>0 && String(header[0]).toUpperCase()==='ID';
     const o = hasId ? 1 : 0;
@@ -967,10 +988,6 @@ async function loadData(){
     (data['TipoCambio']||[]).forEach(r=>{ if(r[0]&&r[1]) tipoCambio[String(r[0]).trim()]=parseFloat(r[1])||0; });
     updateHeader();
     renderView();
-  }catch(e){
-    document.getElementById('mainContent').innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">${e.message||'Error al cargar datos.'}<br><br><small style="color:var(--muted);font-size:11px">Revisá la consola (F12) para más detalles</small></div></div>`;
-    console.error('loadData error:',e);
-  }
 }
 
 function gastosDelMes(d){const mk=mesKey(d);return gastos.filter(g=>fechaToMesKey(g.fecha)===mk||g.mes===mk);}
