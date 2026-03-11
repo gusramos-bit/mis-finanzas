@@ -576,20 +576,6 @@ body {
 
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 
-.modal {
-  background: var(--bg2);
-  border-radius: 24px 24px 0 0;
-  padding: 18px 22px 40px;
-  width: 100%; max-width: 430px;
-  margin: 0 auto;
-  transform: translateY(100%);
-  transition: transform 0.32s cubic-bezier(0.4,0,0.2,1);
-  max-height: 92vh;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-bottom: none;
-}
-
 .modal-overlay.open .modal { transform: translateY(0); }
 
 .modal-handle {
@@ -607,9 +593,10 @@ body {
   position: sticky;
   top: -18px;
   background: var(--bg2);
-  padding: 14px 0 10px;
+  padding: 18px 0 12px;
   margin-top: -18px;
   z-index: 10;
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-top .modal-title { margin-bottom: 0; }
