@@ -582,21 +582,24 @@ body {
   width: 36px; height: 4px;
   background: var(--border2);
   border-radius: 2px;
-  margin: 0 auto 16px;
+  margin: 0 auto 12px;
+}
+
+.modal-sticky-header {
+  position: sticky;
+  top: -18px;
+  background: var(--bg2);
+  padding: 18px 0 0;
+  margin: -18px 0 16px;
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
 }
 
 .modal-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  position: sticky;
-  top: -18px;
-  background: var(--bg2);
-  padding: 18px 0 12px;
-  margin-top: -18px;
-  z-index: 10;
-  border-bottom: 1px solid var(--border);
 }
 
 .modal-top .modal-title { margin-bottom: 0; }
@@ -835,8 +838,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <!-- MODAL MES -->
 <div class="modal-overlay" id="modalMes">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-top"><div class="modal-title">Mes actual</div><button class="modal-close" onclick="closeModal('modalMes')">×</button></div>
+    <div class="modal-sticky-header"><div class="modal-handle"></div><div class="modal-top"><div class="modal-title">Mes actual</div><button class="modal-close" onclick="closeModal('modalMes')">×</button></div></div>
     <input class="form-input" type="month" id="mesSelectorQuick" onchange="cambiarMesQuick(this.value)">
     <button class="btn-secondary" onclick="closeModal('modalMes')">Cerrar</button>
   </div>
@@ -845,8 +847,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <!-- MODAL NUEVO GASTO -->
 <div class="modal-overlay" id="modalNuevo">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-top"><div class="modal-title">Nuevo gasto</div><button class="modal-close" onclick="closeModal('modalNuevo')">×</button></div>
+    <div class="modal-sticky-header"><div class="modal-handle"></div><div class="modal-top"><div class="modal-title">Nuevo gasto</div><button class="modal-close" onclick="closeModal('modalNuevo')">×</button></div></div>
     <label class="form-label">Tipo</label>
     <div class="tipo-toggle">
       <button class="tipo-btn active" onclick="setTipo('contado')" id="tipoContado">💵 Contado</button>
@@ -878,8 +879,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <!-- MODAL CONFIG -->
 <div class="modal-overlay" id="modalConfig">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-top"><div class="modal-title">Configuración</div><button class="modal-close" onclick="closeModal('modalConfig')">×</button></div>
+    <div class="modal-sticky-header"><div class="modal-handle"></div><div class="modal-top"><div class="modal-title">Configuración</div><button class="modal-close" onclick="closeModal('modalConfig')">×</button></div></div>
     <div id="configContent"></div>
     <button class="btn-secondary" onclick="closeModal('modalConfig')">Cerrar</button>
   </div>
@@ -888,8 +888,7 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <!-- MODAL BUSCAR -->
 <div class="modal-overlay" id="modalBuscar">
   <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-top"><div class="modal-title">Buscar</div><button class="modal-close" onclick="closeModal('modalBuscar')">×</button></div>
+    <div class="modal-sticky-header"><div class="modal-handle"></div><div class="modal-top"><div class="modal-title">Buscar</div><button class="modal-close" onclick="closeModal('modalBuscar')">×</button></div></div>
     <input class="form-input" type="text" id="inputBuscar" placeholder="Detalle, rubro..." oninput="buscarGastos()">
     <div id="buscarResultados"></div>
     <button class="btn-secondary" onclick="closeModal('modalBuscar')">Cerrar</button>
@@ -899,14 +898,14 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <!-- MODAL EDITAR GASTO -->
 <div class="modal-overlay" id="modalEditar">
   <div class="modal">
-    <div class="modal-handle"></div>
+    <div class="modal-sticky-header"><div class="modal-handle"></div>
     <div class="modal-top">
       <div class="modal-title">Editar gasto</div>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="eliminarGasto()" style="background:rgba(255,77,106,0.15);border:1px solid rgba(255,77,106,0.3);color:var(--red);border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer">🗑</button>
         <button class="modal-close" onclick="closeModal('modalEditar')">×</button>
       </div>
-    </div>
+    </div></div>
     <label class="form-label">Importe</label>
     <input class="form-input" type="number" id="editMonto" placeholder="0" inputmode="decimal">
     <label class="form-label">Rubro</label>
