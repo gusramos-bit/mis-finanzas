@@ -1208,6 +1208,11 @@ function openModal(id){
     setTipo('contado');renderChipsRubro();
   }
   document.getElementById(id).classList.add('open');
+  // Resetear scroll al inicio del modal-body
+  setTimeout(()=>{
+    const body=document.querySelector('#'+id+' .modal-body');
+    if(body) body.scrollTop=0;
+  }, 50);
 }
 
 function closeModal(id){document.getElementById(id).classList.remove('open');}
