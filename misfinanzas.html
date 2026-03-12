@@ -852,20 +852,21 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <!-- MODAL NUEVO GASTO -->
 <div class="modal-overlay" id="modalNuevo">
   <div class="modal">
-    <div class="modal-sticky-header"><div class="modal-handle"></div><div class="modal-top"><div class="modal-title">Nuevo gasto</div><button class="modal-close" onclick="closeModal('modalNuevo')">×</button></div></div><div class="modal-body">
-    <label class="form-label">Tipo</label>
-    <div class="tipo-toggle">
-      <button class="tipo-btn active" onclick="setTipo('contado')" id="tipoContado">💵 Contado</button>
-      <button class="tipo-btn" onclick="setTipo('cuota')" id="tipoCuota">💳 Cuotas</button>
-      <button class="tipo-btn" onclick="setTipo('fijo')" id="tipoFijo">🔁 Fijo</button>
+    <div class="modal-sticky-header">
+      <div class="modal-handle"></div>
+      <div class="modal-top"><div class="modal-title">Nuevo gasto</div><button class="modal-close" onclick="closeModal('modalNuevo')">×</button></div>
+      <div class="tipo-toggle" style="margin-top:12px">
+        <button class="tipo-btn active" onclick="setTipo('contado')" id="tipoContado">💵 Contado</button>
+        <button class="tipo-btn" onclick="setTipo('cuota')" id="tipoCuota">💳 Cuotas</button>
+        <button class="tipo-btn" onclick="setTipo('fijo')" id="tipoFijo">🔁 Fijo</button>
+      </div>
+      <input class="form-input" type="number" id="inputMonto" placeholder="Importe $" inputmode="decimal" style="margin-top:10px;margin-bottom:0;font-size:22px;font-weight:700;font-family:'Syne',sans-serif">
+      <div id="cuotasSection" style="display:none;margin-top:8px">
+        <input class="form-input" type="number" id="inputCuotas" placeholder="Cantidad de cuotas" inputmode="numeric" style="margin-bottom:0">
+        <div class="cuota-calc" id="cuotaCalc"></div>
+      </div>
     </div>
-    <label class="form-label">Importe total</label>
-    <input class="form-input" type="number" id="inputMonto" placeholder="0" inputmode="decimal">
-    <div id="cuotasSection" style="display:none">
-      <label class="form-label">Cantidad de cuotas</label>
-      <input class="form-input" type="number" id="inputCuotas" placeholder="6" inputmode="numeric">
-      <div class="cuota-calc" id="cuotaCalc"></div>
-    </div>
+    <div class="modal-body">
     <label class="form-label">Rubro</label>
     <div class="chips" id="chipsRubro"></div>
     <div id="subRubroSection" style="display:none">
