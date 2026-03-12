@@ -555,6 +555,7 @@ body {
   opacity: 0; pointer-events: none;
   transition: opacity 0.3s;
   backdrop-filter: blur(6px);
+  height: 100dvh;
 }
 
 #modalEditar { z-index: 300; }
@@ -860,13 +861,13 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
         <button class="tipo-btn" onclick="setTipo('cuota')" id="tipoCuota">💳 Cuotas</button>
         <button class="tipo-btn" onclick="setTipo('fijo')" id="tipoFijo">🔁 Fijo</button>
       </div>
-      <input class="form-input" type="number" id="inputMonto" placeholder="Importe $" inputmode="decimal" style="margin-top:10px;margin-bottom:0;font-size:22px;font-weight:700;font-family:'Syne',sans-serif">
-      <div id="cuotasSection" style="display:none;margin-top:8px">
-        <input class="form-input" type="number" id="inputCuotas" placeholder="Cantidad de cuotas" inputmode="numeric" style="margin-bottom:0">
-        <div class="cuota-calc" id="cuotaCalc"></div>
-      </div>
     </div>
     <div class="modal-body">
+    <input class="form-input" type="number" id="inputMonto" placeholder="Importe $" inputmode="decimal" style="font-size:22px;font-weight:700;font-family:'Syne',sans-serif">
+    <div id="cuotasSection" style="display:none">
+      <input class="form-input" type="number" id="inputCuotas" placeholder="Cantidad de cuotas" inputmode="numeric">
+      <div class="cuota-calc" id="cuotaCalc"></div>
+    </div>
     <label class="form-label">Rubro</label>
     <div class="chips" id="chipsRubro"></div>
     <div id="subRubroSection" style="display:none">
@@ -1518,10 +1519,21 @@ document.querySelectorAll('.modal-overlay').forEach(o=>{
 // Fix modal position when virtual keyboard opens/closes
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize',()=>{
+    const vh = window.visualViewport.height;
     document.querySelectorAll('.modal-overlay.open').forEach(o=>{
-      const offset=window.innerHeight - window.visualViewport.height;
-      o.style.bottom = offset + 'px';
-      o.style.height = window.visualViewport.height + 'px';
+      o.style.height = vh + 'px';
+      const modal = o.querySelector('.modal');
+      if(modal) modal.style.maxHeight = (vh * 0.95) + 'px';
+    });
+    // Si hay un input activo, scrollearlo a la vista
+    const active = document.activeElement;
+    if(active && active.matches('.form-input')){
+      setTimeout(()=> active.scrollIntoView({behavior:'smooth', block:'nearest'}), 100);
+    }
+  });
+  window.visualViewport.addEventListener('scroll',()=>{
+    document.querySelectorAll('.modal-overlay.open').forEach(o=>{
+      o.style.top = window.visualViewport.offsetTop + 'px';
     });
   });
 }
