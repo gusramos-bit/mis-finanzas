@@ -1114,79 +1114,52 @@ function renderRanking(el){
   const totales={};let total=0;
   gm.forEach(g=>{totales[g.rubro]=(totales[g.rubro]||0)+g.monto;total+=g.monto;});
   const sorted=Object.entries(totales).sort((a,b)=>b[1]-a[1]);
-  if(!sorted.length){el.innerHTML=`<div class="empty"><div class="empty-icon">🏆</div><div class="empty-text">Sin datos este mes</div></div>`;return;}
+  if(!sorted.length){el.innerHTML='<div class="empty"><div class="empty-icon">🏆</div><div class="empty-text">Sin datos este mes</div></div>';return;}
   const maxVal=sorted[0][1];
   const posC=['p1','p2','p3'];
-  el.innerHTML=`<div class="section-label">Ranking del mes</div>`+sorted.map(([rubro,monto],i)=>{
+  el.innerHTML='<div class="section-label">Ranking del mes</div>';
+  sorted.forEach(([rubro,monto],i)=>{
     const pct=total>0?((monto/total)*100).toFixed(0):0;
     const bw=((monto/maxVal)*100).toFixed(0);
-    return `<div class="ranking-card" onclick="renderRankingSubrubro(this.closest('.view-content'), '${rubro.replace(/'/g,"\\'")}', ${monto}, ${total})" style="cursor:pointer">
-      <div class="ranking-row">
-        <div class="ranking-left">
-          <div class="ranking-pos ${posC[i]||''}">${i+1}</div>
-          <div>
-            <div class="ranking-name">${rubro}</div>
-            <div class="ranking-pct">${pct}% del total</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="ranking-amount">$${fmt(monto)}</div>
-          <div style="color:var(--muted);font-size:16px">›</div>
-        </div>
-      </div>
-      <div class="bar-bg"><div class="bar-fill" style="width:${bw}%"></div></div>
-    </div>`;
-  }).join('');
+    const card=document.createElement('div');
+    card.className='ranking-card';
+    card.style.cursor='pointer';
+    card.innerHTML=`<div class="ranking-row"><div class="ranking-left"><div class="ranking-pos ${posC[i]||''}">${i+1}</div><div><div class="ranking-name">${rubro}</div><div class="ranking-pct">${pct}% del total</div></div></div><div style="display:flex;align-items:center;gap:8px"><div class="ranking-amount">$${fmt(monto)}</div><div style="color:var(--muted);font-size:16px">›</div></div></div><div class="bar-bg"><div class="bar-fill" style="width:${bw}%"></div></div>`;
+    card.addEventListener('click',()=>renderRankingSubrubro(el,rubro,monto,total));
+    el.appendChild(card);
+  });
 }
 
-function renderRankingSubrubro(el, rubro, totalRubro, totalMes){
+function renderRankingSubrubro(el,rubro,totalRubro,totalMes){
   const gm=gastosDelMes(mesActual).filter(g=>g.rubro===rubro);
   const totales={};
-  gm.forEach(g=>{
-    const key=g.subrubro||'Sin subcategoría';
-    totales[key]=(totales[key]||0)+g.monto;
-  });
+  gm.forEach(g=>{const key=g.subrubro||'Sin subcategoría';totales[key]=(totales[key]||0)+g.monto;});
   const sorted=Object.entries(totales).sort((a,b)=>b[1]-a[1]);
   const maxVal=sorted[0]?.[1]||1;
   const pctRubro=totalMes>0?((totalRubro/totalMes)*100).toFixed(0):0;
-
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <button onclick="renderRanking(this.closest('.view-content'))" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
-      <div class="section-label" style="margin:0">${rubro}</div>
-    </div>
-    <div class="ranking-card" style="margin-bottom:16px">
-      <div class="ranking-row">
-        <div class="ranking-left">
-          <div style="font-size:20px">📊</div>
-          <div>
-            <div class="ranking-name">Total ${rubro}</div>
-            <div class="ranking-pct">${pctRubro}% del mes</div>
-          </div>
-        </div>
-        <div class="ranking-amount">$${fmt(totalRubro)}</div>
-      </div>
-    </div>
-    <div class="section-label">Desglose por subcategoría</div>
-    ${sorted.map(([sub,monto],i)=>{
-      const pct=totalRubro>0?((monto/totalRubro)*100).toFixed(0):0;
-      const bw=((monto/maxVal)*100).toFixed(0);
-      const posC=['p1','p2','p3'];
-      return `<div class="ranking-card">
-        <div class="ranking-row">
-          <div class="ranking-left">
-            <div class="ranking-pos ${posC[i]||''}">${i+1}</div>
-            <div>
-              <div class="ranking-name">${sub}</div>
-              <div class="ranking-pct">${pct}% del rubro</div>
-            </div>
-          </div>
-          <div class="ranking-amount">$${fmt(monto)}</div>
-        </div>
-        <div class="bar-bg"><div class="bar-fill" style="width:${bw}%"></div></div>
-      </div>`;
-    }).join('')}
-  `;
+  const posC=['p1','p2','p3'];
+  el.innerHTML='';
+  const header=document.createElement('div');
+  header.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:16px';
+  const btnVolver=document.createElement('button');
+  btnVolver.textContent='← Volver';
+  btnVolver.style.cssText='background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:10px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer';
+  btnVolver.addEventListener('click',()=>renderRanking(el));
+  const titulo=document.createElement('div');
+  titulo.className='section-label';titulo.style.margin='0';titulo.textContent=rubro;
+  header.appendChild(btnVolver);header.appendChild(titulo);el.appendChild(header);
+  const resumen=document.createElement('div');
+  resumen.className='ranking-card';resumen.style.marginBottom='16px';
+  resumen.innerHTML=`<div class="ranking-row"><div class="ranking-left"><div style="font-size:20px">📊</div><div><div class="ranking-name">Total ${rubro}</div><div class="ranking-pct">${pctRubro}% del mes</div></div></div><div class="ranking-amount">$${fmt(totalRubro)}</div></div>`;
+  el.appendChild(resumen);
+  const label=document.createElement('div');label.className='section-label';label.textContent='Desglose por subcategoría';el.appendChild(label);
+  sorted.forEach(([sub,monto],i)=>{
+    const pct=totalRubro>0?((monto/totalRubro)*100).toFixed(0):0;
+    const bw=((monto/maxVal)*100).toFixed(0);
+    const card=document.createElement('div');card.className='ranking-card';
+    card.innerHTML=`<div class="ranking-row"><div class="ranking-left"><div class="ranking-pos ${posC[i]||''}">${i+1}</div><div><div class="ranking-name">${sub}</div><div class="ranking-pct">${pct}% del rubro</div></div></div><div class="ranking-amount">$${fmt(monto)}</div></div><div class="bar-bg"><div class="bar-fill" style="width:${bw}%"></div></div>`;
+    el.appendChild(card);
+  });
 }
 
 function renderCuotas(el){
