@@ -1280,16 +1280,22 @@ function selectSub(s){
 }
 
 async function guardarGasto(){
+  if(guardarGasto._saving) return;
+  guardarGasto._saving=true;
+  const btn=document.querySelector('#modalNuevo .btn-primary');
+  if(btn){btn.disabled=true;btn.textContent='Guardando...';}
+  const reset=()=>{guardarGasto._saving=false;if(btn){btn.disabled=false;btn.textContent='Guardar gasto';}};
+  setTimeout(reset,4000);
   const monto=parseFloat(document.getElementById('inputMonto').value);
-  if(!monto||monto<=0) return showToast('⚠️ Ingresá un monto válido');
-  if(!rubroSeleccionado) return showToast('⚠️ Seleccioná un rubro');
+  if(!monto||monto<=0){reset();return showToast('⚠️ Ingresá un monto válido');}
+  if(!rubroSeleccionado){reset();return showToast('⚠️ Seleccioná un rubro');}
   const detalle=document.getElementById('inputDetalle').value.trim();
   const fecha=document.getElementById('inputFecha').value;
   const mk=fecha.slice(0,7);
 
   if(tipoGasto==='cuota'){
     const cant=parseInt(document.getElementById('inputCuotas').value);
-    if(!cant||cant<2) return showToast('⚠️ Mínimo 2 cuotas');
+    if(!cant||cant<2){reset();return showToast('⚠️ Mínimo 2 cuotas');}
     const montoCuota=Math.round(monto/cant);
     const filas=[];
     for(let i=0;i<cant;i++){
@@ -1303,8 +1309,8 @@ async function guardarGasto(){
     const cuotaLocal={id:filas[0][0],idx:gastos.length,fecha,mes:mk,rubro:rubroSeleccionado,subrubro:subRubroSeleccionado||'',detalle,monto:montoCuota,tipo:'Cuota 1/'+cant};
     gastos.push(cuotaLocal);
     cuotasActivas.push({fecha,rubro:rubroSeleccionado,detalle,montoCuota,totalCuotas:cant,cuotaActual:1,totalGasto:monto});
-    updateHeader(); renderView();
-    closeModal('modalNuevo');
+    updateHeader();renderView();
+    closeModal('modalNuevo');reset();
     showToast('✅ '+cant+' cuotas de $'+fmt(montoCuota));
     scriptPost({accion:'guardar',hoja:'Gastos',filas}).catch(()=>showToast('⚠️ Error al sincronizar'));
     scriptPost({accion:'guardar',hoja:'Cuotas Activas',filas:[[fecha,rubroSeleccionado,detalle,montoCuota,cant,1,monto,'']]});
@@ -1314,14 +1320,15 @@ async function guardarGasto(){
     const gastoLocal={id,idx:gastos.length,fecha,mes:mk,rubro:rubroSeleccionado,subrubro:subRubroSeleccionado||'',detalle,monto,tipo};
     gastos.push(gastoLocal);
     if(tipoGasto==='fijo') gastosFijos.push({nombre:detalle||rubroSeleccionado,rubro:rubroSeleccionado,monto,activo:true});
-    updateHeader(); renderView();
-    closeModal('modalNuevo');
+    updateHeader();renderView();
+    closeModal('modalNuevo');reset();
     showToast('✅ Gasto registrado');
     scriptPost({accion:'guardar',hoja:'Gastos',filas:[[id,fecha,mk,rubroSeleccionado,subRubroSeleccionado||'',detalle,monto,tipo]]})
       .catch(()=>showToast('⚠️ Error al sincronizar'));
     if(tipoGasto==='fijo')
       scriptPost({accion:'guardar',hoja:'Gastos Fijos',filas:[[detalle||rubroSeleccionado,rubroSeleccionado,monto,'true']]});
   }
+}
 }
 
 function openConfig(){renderConfig();openModal('modalConfig');}
