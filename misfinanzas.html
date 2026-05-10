@@ -1030,7 +1030,7 @@ function procesarData(data){
     renderView();
 }
 
-function gastosDelMes(d){const mk=mesKey(d);return gastos.filter(g=>fechaToMesKey(g.fecha)===mk||g.mes===mk);}
+function gastosDelMes(d){const mk=mesKey(d);return gastos.filter(g=>fechaToMesKey(g.fecha)===mk);}
 
 function updateHeader(){
   document.getElementById('monthBadge').textContent=fmtMes(mesActual);
@@ -1084,7 +1084,32 @@ function renderView(){
 function renderGastos(el){
   const mk=mesKey(mesActual);
   const tc=tipoCambio[mk]||0;
-  const gm=gastosDelMes(mesActual).sort((a,b)=>{ const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd; const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx; const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx; return tb-ta; });
+  const _h=new Date();const hoyStr=_h.getFullYear()+"-"+String(_h.getMonth()+1).padStart(2,"0")+"-"+String(_h.getDate()).padStart(2,"0");
+  const mesMk=mesKey(mesActual);
+  const gm=gastosDelMes(mesActual).sort((a,b)=>{
+    // Usar g.mes (mes contable) para determinar si pertenece al mes actual
+    const aMes=a.mes||fechaToMesKey(a.fecha);
+    const bMes=b.mes||fechaToMesKey(b.fecha);
+    const aEsMesActual=aMes===mesMk, bEsMesActual=bMes===mesMk;
+    const aFut=a.fecha>hoyStr, bFut=b.fecha>hoyStr;
+    // Grupos: 0=mes actual pasado mismo mes, 1=mes actual futuro, 2=pasado fecha anterior al mes, 3=mes anterior
+    const aFechaMs=fechaToMesKey(a.fecha)||a.mes;
+    const bFechaMs=fechaToMesKey(b.fecha)||b.mes;
+    const aGrupo=!aEsMesActual?3:aFut?1:aFechaMs<mesMk?2:0;
+    const bGrupo=!bEsMesActual?3:bFut?1:bFechaMs<mesMk?2:0;
+    if(aGrupo!==bGrupo) return aGrupo-bGrupo;
+    const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx;
+    const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx;
+    if(aGrupo===1){
+      // Futuros del mes actual: más lejano primero (desc)
+      const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd;
+      return tb-ta;
+    } else {
+      // Pasados (mes actual o anterior): más reciente primero
+      const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd;
+      return tb-ta;
+    }
+  });
   if(!gm.length){el.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sin gastos este mes</div></div>`;return;}
   el.innerHTML=`<div class="section-label">Gastos del mes</div>`+gm.map(g=>{
     const emojiMatch=g.rubro.match(/^\p{Emoji}/u);
@@ -1298,11 +1323,17 @@ async function guardarGasto(){
     if(!cant||cant<2){reset();return showToast('⚠️ Mínimo 2 cuotas');}
     const montoCuota=Math.round(monto/cant);
     const filas=[];
+    const fechaBase=new Date(fecha+'T12:00:00');
+    const diaOriginal=fechaBase.getDate();
     for(let i=0;i<cant;i++){
-      const d=new Date(fecha+'T12:00:00');
-      d.setMonth(d.getMonth()+i);
-      const f=d.toISOString().slice(0,10);
+      const anio=fechaBase.getFullYear();
+      const mes=fechaBase.getMonth()+i;
+      // Último día del mes destino
+      const ultimoDia=new Date(anio, mes+1, 0).getDate();
+      const dia=Math.min(diaOriginal, ultimoDia);
+      const d=new Date(anio, mes, dia);
       const mk2=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      const f=mk2+'-'+String(d.getDate()).padStart(2,'0');
       const id='GAS-'+Date.now()+'-'+i;
       filas.push([id,f,mk2,rubroSeleccionado,subRubroSeleccionado||'',detalle,montoCuota,'Cuota '+(i+1)+'/'+cant]);
     }
@@ -1408,7 +1439,32 @@ function renderUSD(el){
     el.innerHTML=`<div class="empty"><div class="empty-icon">💵</div><div class="empty-text">No hay tipo de cambio cargado para este mes.<br><br>Cargalo en Configuración.</div></div>`;
     return;
   }
-  const gm=gastosDelMes(mesActual).sort((a,b)=>{ const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd; const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx; const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx; return tb-ta; });
+  const _h=new Date();const hoyStr=_h.getFullYear()+"-"+String(_h.getMonth()+1).padStart(2,"0")+"-"+String(_h.getDate()).padStart(2,"0");
+  const mesMk=mesKey(mesActual);
+  const gm=gastosDelMes(mesActual).sort((a,b)=>{
+    // Usar g.mes (mes contable) para determinar si pertenece al mes actual
+    const aMes=a.mes||fechaToMesKey(a.fecha);
+    const bMes=b.mes||fechaToMesKey(b.fecha);
+    const aEsMesActual=aMes===mesMk, bEsMesActual=bMes===mesMk;
+    const aFut=a.fecha>hoyStr, bFut=b.fecha>hoyStr;
+    // Grupos: 0=mes actual pasado mismo mes, 1=mes actual futuro, 2=pasado fecha anterior al mes, 3=mes anterior
+    const aFechaMs=fechaToMesKey(a.fecha)||a.mes;
+    const bFechaMs=fechaToMesKey(b.fecha)||b.mes;
+    const aGrupo=!aEsMesActual?3:aFut?1:aFechaMs<mesMk?2:0;
+    const bGrupo=!bEsMesActual?3:bFut?1:bFechaMs<mesMk?2:0;
+    if(aGrupo!==bGrupo) return aGrupo-bGrupo;
+    const ta=a.id&&a.id.startsWith("GAS-")?parseInt(a.id.split("-")[1]||0):a.idx;
+    const tb=b.id&&b.id.startsWith("GAS-")?parseInt(b.id.split("-")[1]||0):b.idx;
+    if(aGrupo===1){
+      // Futuros del mes actual: más lejano primero (desc)
+      const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd;
+      return tb-ta;
+    } else {
+      // Pasados (mes actual o anterior): más reciente primero
+      const fd=b.fecha.localeCompare(a.fecha); if(fd!==0) return fd;
+      return tb-ta;
+    }
+  });
   const totalUSD=(gm.reduce((s,g)=>s+g.monto,0)/tc).toFixed(0);
   el.innerHTML=`
     <div class="section-label">Gastos en USD · TC $${fmt(tc)}</div>
