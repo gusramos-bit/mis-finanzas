@@ -793,7 +793,8 @@ input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
 <div class="hero">
   <div class="hero-eyebrow">Total del mes</div>
   <div class="hero-amount"><span class="hero-amount-sign">$</span><span id="totalMes">0</span></div>
-  <div id="heroUsd" style="display:none;font-size:13px;color:var(--muted2);margin-bottom:14px;font-weight:500;letter-spacing:0.2px"></div>
+  <div id="heroUsd" style="display:none;font-size:13px;color:var(--muted2);margin-bottom:6px;font-weight:500;letter-spacing:0.2px"></div>
+  <div id="heroVsAnt" style="display:none;font-size:13px;margin-bottom:14px;font-weight:600;letter-spacing:0.2px"></div>
   <div class="hero-divider"></div>
   <div class="hero-stats">
     <div class="hero-stat">
@@ -1043,6 +1044,7 @@ function updateHeader(){
   document.getElementById('totalHoy').textContent='$'+fmt(totalH);
   document.getElementById('totalCuotas').textContent='$'+fmt(totalC);
   document.getElementById('cantGastos').textContent=gm.length;
+
   // USD en hero
   const mk=mesKey(mesActual);
   const tc=tipoCambio[mk];
@@ -1053,6 +1055,34 @@ function updateHeader(){
     heroUsd.style.display='block';
   } else {
     heroUsd.style.display='none';
+  }
+
+  // Comparación vs mismo período del mes anterior
+  const heroVsAnt=document.getElementById('heroVsAnt');
+  const _h=new Date();
+  const mesActualKey=mesKey(mesActual);
+  const mesActualStr=`${mesActual.getFullYear()}-${String(mesActual.getMonth()+1).padStart(2,'0')}`;
+  // Solo mostrar si estamos viendo el mes actual
+  if(mesActualKey===`${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}`){
+    const diaHoy=_h.getDate();
+    const diaHoyStr=String(diaHoy).padStart(2,'0');
+    const mesAnt=new Date(_h.getFullYear(),_h.getMonth()-1,1);
+    const mkAnt=mesKey(mesAnt);
+    const diasHastaHoyAnt=`${mkAnt}-${diaHoyStr}`;
+    const gmAnt=gastos.filter(g=>fechaToMesKey(g.fecha)===mkAnt && g.fecha<=diasHastaHoyAnt);
+    const totalAnt=gmAnt.reduce((s,g)=>s+g.monto,0);
+    if(totalAnt>0){
+      const delta=((total-totalAnt)/totalAnt*100);
+      const sign=delta>=0?'+':'';
+      const color=delta>=0?'#e05555':'#4caf7d';
+      const arrow=delta>=0?'↑':'↓';
+      heroVsAnt.innerHTML=`<span style="color:${color}">${arrow} ${sign}${delta.toFixed(1)}% vs mismo período de ${fmtMes(mesAnt)}</span>`;
+      heroVsAnt.style.display='block';
+    } else {
+      heroVsAnt.style.display='none';
+    }
+  } else {
+    heroVsAnt.style.display='none';
   }
 }
 
